@@ -1,16 +1,20 @@
-// src/calibration/dto/update-calibration.dto.ts
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateCalibrationDto {
-  @IsOptional() @IsNumber()
+  @IsOptional()
+  @IsNumber()
   sensorOffsetCm?: number;
 
-  @IsOptional() @IsNumber()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   scaleFactor?: number;
 
-  @IsOptional() @IsNumber()
+  @IsOptional()
+  @IsNumber()
   minValidCm?: number;
 
-  @IsOptional() @IsNumber()
+  @IsOptional()
+  @IsNumber()
   maxValidCm?: number;
 }

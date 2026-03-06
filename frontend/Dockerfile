@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -8,8 +8,10 @@ RUN npm install
 COPY index.html ./
 COPY vite.config.js ./
 COPY src ./src
-
 RUN npm run build
 
-EXPOSE 4173
-CMD ["npm", "run", "preview"]
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

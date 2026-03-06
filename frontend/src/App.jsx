@@ -7,9 +7,7 @@ const defaultConfig = {
   calibrationOffset: 0,
 };
 
-const runtimeHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const defaultApiBase = `http://${runtimeHost}:3000/api`;
-const apiBase = import.meta.env.VITE_API_URL ?? defaultApiBase;
+const apiBase = import.meta.env.VITE_API_URL ?? '/api';
 
 async function parseError(response) {
   try {
@@ -52,7 +50,7 @@ export function App() {
       });
       setMessage('Configuración cargada correctamente.');
     } catch (fetchError) {
-      const fallback = `No se pudo conectar con la API (${apiBase}). Verifica que backend esté arriba en el puerto 3000.`;
+      const fallback = `No se pudo conectar con la API (${apiBase}). Si usas Docker, revisa el proxy /api del frontend.`;
       setError(fetchError instanceof Error ? `${fetchError.message}. ${fallback}` : fallback);
     } finally {
       setLoading(false);
@@ -92,7 +90,7 @@ export function App() {
       });
       setMessage('Configuración actualizada.');
     } catch (saveError) {
-      const fallback = `No se pudo conectar con la API (${apiBase}). Verifica CORS y que backend esté arriba.`;
+      const fallback = `No se pudo conectar con la API (${apiBase}).`;
       setError(saveError instanceof Error ? `${saveError.message}. ${fallback}` : fallback);
     } finally {
       setSaving(false);
@@ -122,7 +120,7 @@ export function App() {
       });
       setMessage('Configuración reiniciada a valores por defecto.');
     } catch (resetError) {
-      const fallback = `No se pudo conectar con la API (${apiBase}). Verifica que backend esté arriba.`;
+      const fallback = `No se pudo conectar con la API (${apiBase}).`;
       setError(resetError instanceof Error ? `${resetError.message}. ${fallback}` : fallback);
     } finally {
       setSaving(false);

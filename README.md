@@ -20,8 +20,10 @@ docker compose up --build
 
 Servicios:
 - Frontend: `http://localhost:4173`
-- API: `http://localhost:3000/api`
+- API pública (opcional): `http://localhost:3000/api`
 - PostgreSQL: `localhost:5432`
+
+> En Docker, el frontend usa proxy interno `'/api' -> api:3000`, por lo que no depende de `localhost:3000` del navegador.
 
 ## Variables de entorno
 
@@ -32,13 +34,11 @@ PORT=3000
 DATABASE_URL=postgresql://postgres:postgres@db:5432/tanques?schema=public
 ```
 
-Frontend:
+Frontend (opcional, para despliegues fuera de Docker):
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 ```
-
-Si `VITE_API_URL` no está definido, el frontend usa automáticamente `http://<host-actual>:3000/api` para evitar el error típico de `Failed to fetch` cuando no se usa `localhost`.
 
 ## Ejecutar local sin Docker (opcional)
 
@@ -59,3 +59,5 @@ cd frontend
 npm install
 npm run dev
 ```
+
+En modo local `vite dev`, `/api` se proxea automáticamente a `http://localhost:3000`.

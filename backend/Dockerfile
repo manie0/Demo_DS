@@ -26,5 +26,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist         ./dist
 # Schema y seed necesarios en runtime
 COPY prisma ./prisma
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
+CMD ["./docker-entrypoint.sh"]

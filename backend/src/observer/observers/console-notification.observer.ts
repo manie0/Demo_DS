@@ -14,17 +14,8 @@
  */
 import { Injectable } from '@nestjs/common';
 import { ITankObserver } from '../interfaces/tank-observer.interface';
-import { TankAlertEvent, AlertType } from '../interfaces/tank-alert-event.interface';
+import { TankAlertEvent } from '../interfaces/tank-alert-event.interface';
 
-/** Iconos visuales por tipo de alerta para facilitar lectura en consola */
-const ALERT_ICONS: Record<AlertType, string> = {
-  [AlertType.NIVEL_BAJO]:    '🟡',
-  [AlertType.NIVEL_CRITICO]: '🔴',
-  [AlertType.NIVEL_ALTO]:    '🟠',
-  [AlertType.LLENO]:         '🔵',
-  [AlertType.POSIBLE_FUGA]:  '🚨',
-  [AlertType.NORMAL]:        '🟢',
-};
 
 @Injectable()
 export class ConsoleNotificationObserver implements ITankObserver {
@@ -33,11 +24,10 @@ export class ConsoleNotificationObserver implements ITankObserver {
    * en tiempo real al operador del sistema.
    */
   async update(event: TankAlertEvent): Promise<void> {
-    const icon = ALERT_ICONS[event.alertType] ?? '⚠️';
     const border = '═'.repeat(50);
 
     console.log(`\n╔${border}╗`);
-    console.log(`║  ${icon}  NOTIFICACIÓN DE TANQUE${' '.repeat(22)}║`);
+    console.log(`║  NOTIFICACIÓN DE TANQUE${' '.repeat(25)}║`);
     console.log(`╠${border}╣`);
     console.log(`║  Tanque  : ${event.tankName.padEnd(38)}║`);
     console.log(`║  ID      : ${String(event.tankId).padEnd(38)}║`);

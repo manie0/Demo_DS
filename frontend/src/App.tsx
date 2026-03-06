@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Alert, AlertFilters, EvaluateForm } from './types';
-import { fetchAlerts, fetchActiveAlerts, evaluateReading, resolveAlert } from './api';
+import type { Alert, AlertFilters, EvaluateForm, CalibrationConfig, ReadingResult } from './types';
+import {
+  fetchAlerts,
+  fetchActiveAlerts,
+  evaluateReading,
+  resolveAlert,
+  fetchCalibration,
+  updateCalibration,
+  createReading,
+} from './api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const ALERT_ICONS: Record<string, string> = {
-  NIVEL_BAJO:    '🟡',
-  NIVEL_CRITICO: '🔴',
-  NIVEL_ALTO:    '🟠',
-  LLENO:         '🔵',
-  POSIBLE_FUGA:  '🚨',
-  NORMAL:        '🟢',
-};
 
 const ALERT_TYPES = ['all', 'NIVEL_BAJO', 'NIVEL_CRITICO', 'NIVEL_ALTO', 'LLENO', 'POSIBLE_FUGA', 'NORMAL'];
 
@@ -26,7 +25,7 @@ function formatDate(iso: string) {
 function AlertBadge({ type }: { type: string }) {
   return (
     <span className={`badge badge-${type}`}>
-      {ALERT_ICONS[type] ?? '⚠️'} {type.replace('_', ' ')}
+      {type.replace('_', ' ')}
     </span>
   );
 }
@@ -82,9 +81,9 @@ function AlertTable({ alerts, loading, onResolve, resolvingId }: AlertTableProps
                 <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDate(a.createdAt)}</td>
                 <td>
                   {a.resolved ? (
-                    <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>✔ Resuelta</span>
+                    <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>Resuelta</span>
                   ) : (
-                    <span style={{ color: 'var(--danger)', fontSize: 12, fontWeight: 600 }}>● Activa</span>
+                    <span style={{ color: 'var(--danger)', fontSize: 12, fontWeight: 600 }}>Activa</span>
                   )}
                 </td>
                 <td>
@@ -159,7 +158,7 @@ function EvaluatePanel({ onNewAlerts }: EvaluatePanelProps) {
 
   return (
     <div className="card">
-      <div className="card-title">⚡ Evaluar Lectura de Sensor</div>
+      <div className="card-title">Evaluar lectura de sensor</div>
       <form className="form" onSubmit={handleSubmit}>
         <div className="form-row">
           <label>ID del Tanque *</label>
@@ -195,11 +194,11 @@ function EvaluatePanel({ onNewAlerts }: EvaluatePanelProps) {
         </div>
 
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? <><span className="spinner" /> Evaluando…</> : '▶ Evaluar'}
+          {loading ? <><span className="spinner" /> Evaluando…</> : 'Evaluar'}
         </button>
       </form>
 
-      {error && <div className="alert-msg error">❌ {error}</div>}
+      {error && <div className="alert-msg error">{error}</div>}
 
       {results && (
         <div style={{ marginTop: 12 }}>
@@ -209,10 +208,119 @@ function EvaluatePanel({ onNewAlerts }: EvaluatePanelProps) {
           <div className="result-list">
             {results.map((r, i) => (
               <div key={i} className={`result-item ${r.alertType}`}>
-                <strong>{ALERT_ICONS[r.alertType]} {r.alertType}</strong>
+                <strong>{r.alertType}</strong>
                 {r.message}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+function CalibrationPanel() {
+  const [config, setConfig] = useState<CalibrationConfig>({
+    sensorOffsetCm: 0,
+    scaleFactor: 1,
+    minValidCm: 0,
+    maxValidCm: 300,
+  });
+  const [rawCm, setRawCm] = useState('100');
+  const [reading, setReading] = useState<ReadingResult | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadCalibration = useCallback(async () => {
+    setError(null);
+    try {
+      const data = await fetchCalibration();
+      setConfig(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar la calibración');
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCalibration();
+  }, [loadCalibration]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setConfig((prev) => ({ ...prev, [name]: Number(value) }));
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    try {
+      const saved = await updateCalibration({
+        sensorOffsetCm: Number(config.sensorOffsetCm),
+        scaleFactor: Number(config.scaleFactor),
+        minValidCm: Number(config.minValidCm),
+        maxValidCm: Number(config.maxValidCm),
+      });
+      setConfig(saved);
+      setMessage('Configuración guardada');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la calibración');
+    }
+  }
+
+  async function handleReading() {
+    setError(null);
+    setMessage(null);
+    setReading(null);
+    try {
+      const res = await createReading(Number(rawCm));
+      setReading(res);
+      setMessage('Lectura procesada correctamente');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo procesar la lectura');
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div className="card-title">Calibración y lectura</div>
+
+      <form className="form" onSubmit={handleSave}>
+        <div className="form-row">
+          <label>Offset sensor (cm)</label>
+          <input name="sensorOffsetCm" type="number" step="0.1" value={config.sensorOffsetCm} onChange={handleChange} />
+        </div>
+        <div className="form-row">
+          <label>Factor de escala</label>
+          <input name="scaleFactor" type="number" step="0.01" value={config.scaleFactor} onChange={handleChange} />
+        </div>
+        <div className="form-row">
+          <label>Mínimo válido (cm)</label>
+          <input name="minValidCm" type="number" step="0.1" value={config.minValidCm} onChange={handleChange} />
+        </div>
+        <div className="form-row">
+          <label>Máximo válido (cm)</label>
+          <input name="maxValidCm" type="number" step="0.1" value={config.maxValidCm} onChange={handleChange} />
+        </div>
+        <button className="btn btn-primary" type="submit">Guardar calibración</button>
+      </form>
+
+      <div className="form-section-title">Prueba de lectura cruda</div>
+      <div className="filters" style={{ marginTop: 10 }}>
+        <input type="number" step="0.1" value={rawCm} onChange={(e) => setRawCm(e.target.value)} placeholder="raw cm" />
+        <button className="btn btn-primary" onClick={() => void handleReading()}>Procesar lectura</button>
+      </div>
+
+      {message && <div className="alert-msg success">{message}</div>}
+      {error && <div className="alert-msg error">{error}</div>}
+
+      {reading && (
+        <div className="result-list">
+          <div className="result-item NORMAL">
+            <strong>Lectura calibrada</strong>
+            raw: {reading.rawCm} cm · calibrada: {reading.calibratedCm.toFixed(2)} cm
           </div>
         </div>
       )}
@@ -265,7 +373,6 @@ export default function App() {
     <div className="app">
       {/* ── Header ── */}
       <header className="header">
-        <span style={{ fontSize: 28 }}>🛢️</span>
         <div>
           <h1>Lecturas y Alertas de Tanques</h1>
           <div className="subtitle">Patrón Observer – Grupo 6 · Diseño de Software</div>
@@ -278,13 +385,13 @@ export default function App() {
         <section className="alerts-section">
           <div className="card">
             <div className="card-title">
-              🔔 Panel de Alertas
+              Panel de alertas
               {activeCount > 0 && <span className="count-badge">{activeCount}</span>}
               <button
                 onClick={() => void loadAlerts()}
                 style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
               >
-                ↻ Actualizar
+                Actualizar
               </button>
             </div>
 
@@ -339,8 +446,10 @@ export default function App() {
           <EvaluatePanel onNewAlerts={() => void loadAlerts()} />
 
           {/* Mini-guía de umbrales */}
+          <CalibrationPanel />
+
           <div className="card" style={{ marginTop: 16 }}>
-            <div className="card-title">📋 Umbrales de Demo</div>
+            <div className="card-title">Umbrales de demo</div>
             <table style={{ fontSize: 12, width: '100%' }}>
               <thead>
                 <tr>

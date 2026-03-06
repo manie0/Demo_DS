@@ -6,12 +6,20 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Todas las llamadas a /alerts y /setup se redirigen al backend NestJS
+      // Todas las llamadas API se redirigen al backend NestJS
       '/alerts': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
       '/setup': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/calibration': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/readings': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       },

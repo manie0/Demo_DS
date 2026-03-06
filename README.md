@@ -25,6 +25,13 @@ Servicios:
 
 > En Docker, el frontend usa proxy interno `'/api' -> api:3000`, por lo que no depende de `localhost:3000` del navegador.
 
+Si cambias imágenes/base de Docker, reconstruye con:
+
+```bash
+docker compose build --no-cache api
+docker compose up
+```
+
 ## Variables de entorno
 
 Backend (ver `backend/.env.example`):

@@ -33,6 +33,21 @@ services:
       db:
         condition: service_healthy
 
+  # ── Backend SRC + Prisma (raíz del repo) ───────────────────────────────────
+  src-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://tanques:tanques@db:5432/tanques_db
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
   # ── Frontend React (nginx) ────────────────────────────────────────────────────
   frontend:
     build:

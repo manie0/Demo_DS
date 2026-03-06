@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TankLevelSubject } from '../subjects/tank-level.subject';
 import { EvaluateReadingDto } from './dto/evaluate-reading.dto';
@@ -19,6 +24,15 @@ export class AlertsService {
     private readonly tankLevelSubject: TankLevelSubject,
   ) {}
 
+
+  private ensureDatabaseAvailable() {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException(
+        'El módulo de alertas requiere base de datos. Configure DATABASE_URL para habilitarlo.',
+      );
+    }
+  }
+
   // ── Endpoint principal: evaluar lectura y disparar el Observer ────────────
 
   /**
@@ -27,6 +41,7 @@ export class AlertsService {
    * y delega en el TankLevelSubject (patrón Observer) la evaluación y notificación.
    */
   async evaluate(dto: EvaluateReadingDto): Promise<TankAlertEvent[]> {
+    this.ensureDatabaseAvailable();
     const thresholdRecord = await this.prisma.tankThreshold.findUnique({
       where: { tankId: dto.tankId },
       include: { tank: true },
@@ -62,6 +77,7 @@ export class AlertsService {
 
   /** GET /alerts – Lista con filtros opcionales */
   async findAll(filters: FilterAlertDto) {
+    this.ensureDatabaseAvailable();
     return this.prisma.alert.findMany({
       where: {
         ...(filters.tankId !== undefined  && { tankId:    filters.tankId }),
@@ -75,6 +91,7 @@ export class AlertsService {
 
   /** GET /alerts/:id – Detalle de una alerta */
   async findOne(id: number) {
+    this.ensureDatabaseAvailable();
     const alert = await this.prisma.alert.findUnique({
       where: { id },
       include: { tank: { select: { name: true, location: true } } },
@@ -85,6 +102,7 @@ export class AlertsService {
 
   /** PATCH /alerts/:id/resolve – Marcar alerta como resuelta */
   async resolve(id: number) {
+    this.ensureDatabaseAvailable();
     await this.findOne(id); // valida existencia; lanza NotFoundException si no existe
     return this.prisma.alert.update({
       where: { id },
@@ -94,6 +112,7 @@ export class AlertsService {
 
   /** GET /alerts/tank/:tankId – Historial de alertas de un tanque */
   async findByTank(tankId: number) {
+    this.ensureDatabaseAvailable();
     return this.prisma.alert.findMany({
       where:   { tankId },
       orderBy: { createdAt: 'desc' },
@@ -102,6 +121,7 @@ export class AlertsService {
 
   /** GET /alerts/active – Solo alertas no resueltas */
   async findActive() {
+    this.ensureDatabaseAvailable();
     return this.prisma.alert.findMany({
       where:   { resolved: false },
       orderBy: { createdAt: 'desc' },
@@ -113,11 +133,13 @@ export class AlertsService {
 
   /** POST /setup/tanks */
   async createTank(dto: CreateTankDto) {
+    this.ensureDatabaseAvailable();
     return this.prisma.tank.create({ data: dto });
   }
 
   /** GET /setup/tanks */
   async listTanks() {
+    this.ensureDatabaseAvailable();
     return this.prisma.tank.findMany({
       include: { threshold: true },
       orderBy: { id: 'asc' },
@@ -126,6 +148,7 @@ export class AlertsService {
 
   /** POST /setup/thresholds */
   async upsertThreshold(dto: CreateThresholdDto) {
+    this.ensureDatabaseAvailable();
     const tank = await this.prisma.tank.findUnique({ where: { id: dto.tankId } });
     if (!tank) {
       throw new NotFoundException(`Tanque ID ${dto.tankId} no existe. Créalo primero con POST /setup/tanks.`);
@@ -157,6 +180,7 @@ export class AlertsService {
 
   /** GET /setup/thresholds/:tankId */
   async getThreshold(tankId: number) {
+    this.ensureDatabaseAvailable();
     const threshold = await this.prisma.tankThreshold.findUnique({ where: { tankId } });
     if (!threshold) throw new NotFoundException(`No hay umbrales para el tanque ID ${tankId}.`);
     return threshold;

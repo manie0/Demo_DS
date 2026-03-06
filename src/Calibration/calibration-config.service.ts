@@ -1,43 +1,55 @@
-// src/calibration/calibration-config.service.ts
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type CalibrationConfig = {
-  sensorOffsetCm: number;     // Ajuste de nivel
-  scaleFactor: number;        // Factor de escala del sensor
-  minValidCm: number;         // Rango válido
+  id: number;
+  sensorOffsetCm: number;
+  scaleFactor: number;
+  minValidCm: number;
   maxValidCm: number;
   updatedAt: Date;
 };
 
-@Injectable() // <- En NestJS esto ya es Singleton por defecto
+@Injectable()
 export class CalibrationConfigService {
-  private config: CalibrationConfig = {
-    sensorOffsetCm: 0,
-    scaleFactor: 1,
-    minValidCm: 0,
-    maxValidCm: 300,
-    updatedAt: new Date(),
-  };
+  constructor(private readonly prisma: PrismaService) {}
 
-  get(): CalibrationConfig {
-    return this.config;
+  private async ensureConfig(): Promise<CalibrationConfig> {
+    const existing = await this.prisma.calibrationConfig.findFirst({
+      orderBy: { id: 'asc' },
+    });
+
+    if (existing) return existing;
+
+    return this.prisma.calibrationConfig.create({
+      data: {
+        sensorOffsetCm: 0,
+        scaleFactor: 1,
+        minValidCm: 0,
+        maxValidCm: 300,
+      },
+    });
   }
 
-  update(partial: Partial<Omit<CalibrationConfig, 'updatedAt'>>): CalibrationConfig {
-    this.config = {
-      ...this.config,
-      ...partial,
-      updatedAt: new Date(),
-    };
-    return this.config;
+  async get(): Promise<CalibrationConfig> {
+    return this.ensureConfig();
   }
 
-  apply(rawCm: number): number {
-    // Convierte lectura cruda usando calibración global
-    return (rawCm * this.config.scaleFactor) + this.config.sensorOffsetCm;
+  async update(
+    partial: Partial<Omit<CalibrationConfig, 'id' | 'updatedAt'>>,
+  ): Promise<CalibrationConfig> {
+    const current = await this.ensureConfig();
+    return this.prisma.calibrationConfig.update({
+      where: { id: current.id },
+      data: partial,
+    });
   }
 
-  isValid(cm: number): boolean {
-    return cm >= this.config.minValidCm && cm <= this.config.maxValidCm;
+  apply(rawCm: number, config: Pick<CalibrationConfig, 'scaleFactor' | 'sensorOffsetCm'>): number {
+    return rawCm * config.scaleFactor + config.sensorOffsetCm;
+  }
+
+  isValid(cm: number, config: Pick<CalibrationConfig, 'minValidCm' | 'maxValidCm'>): boolean {
+    return cm >= config.minValidCm && cm <= config.maxValidCm;
   }
 }

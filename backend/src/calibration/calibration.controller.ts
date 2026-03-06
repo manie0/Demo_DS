@@ -1,4 +1,3 @@
-// src/calibration/calibration.controller.ts
 import { Body, Controller, Get, Put } from '@nestjs/common';
 import { CalibrationConfigService } from './calibration-config.service';
 import { UpdateCalibrationDto } from './dto/update-calibration.dto';
@@ -8,12 +7,12 @@ export class CalibrationController {
   constructor(private readonly calibration: CalibrationConfigService) {}
 
   @Get()
-  async getConfig() {
+  getConfig() {
     return this.calibration.get();
   }
 
   @Put()
-  async updateConfig(@Body() dto: UpdateCalibrationDto) {
+  updateConfig(@Body() dto: UpdateCalibrationDto) {
     return this.calibration.update(dto);
   }
 }

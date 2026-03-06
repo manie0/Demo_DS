@@ -26,8 +26,8 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`\n🚀 Servidor Observer iniciado en http://localhost:${port}`);
-  console.log(`📡 Endpoints disponibles:`);
+  console.log(`\nServidor iniciado en http://localhost:${port}`);
+  console.log(`Endpoints disponibles:`);
   console.log(`   POST   http://localhost:${port}/alerts/evaluate`);
   console.log(`   GET    http://localhost:${port}/alerts`);
   console.log(`   GET    http://localhost:${port}/alerts/active`);
@@ -35,7 +35,10 @@ async function bootstrap() {
   console.log(`   PATCH  http://localhost:${port}/alerts/:id/resolve`);
   console.log(`   GET    http://localhost:${port}/alerts/tank/:tankId`);
   console.log(`   POST   http://localhost:${port}/setup/tanks`);
-  console.log(`   POST   http://localhost:${port}/setup/thresholds\n`);
+  console.log(`   POST   http://localhost:${port}/setup/thresholds`);
+  console.log(`   GET    http://localhost:${port}/calibration`);
+  console.log(`   PUT    http://localhost:${port}/calibration`);
+  console.log(`   POST   http://localhost:${port}/readings\n`);
 }
 
 bootstrap();

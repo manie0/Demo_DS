@@ -3,11 +3,10 @@ import { ReadingsService } from './readings.service';
 
 @Controller('readings')
 export class ReadingsController {
-
-  constructor(private readingsService: ReadingsService) {}
+  constructor(private readonly readingsService: ReadingsService) {}
 
   @Post()
-  async createReading(@Body() body: { rawCm: number }) {
+  createReading(@Body() body: { rawCm: number }) {
     return this.readingsService.createReading(body.rawCm);
   }
 }

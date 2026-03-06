@@ -1,0 +1,5 @@
+# Root-level generated or accidental folders
+node_modules/
+backend/
+frontend/
+tanques-front/

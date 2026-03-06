@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+.gitignore
+coverage
+tanques-front/node_modules
+tanques-front/dist

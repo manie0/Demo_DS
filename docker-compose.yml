@@ -32,16 +32,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Ejecutar migraciones + seed antes de arrancar el servidor
-    command: >
-      sh -c "
-        echo '⏳ Aplicando migraciones...' &&
-        npx prisma migrate deploy &&
-        echo '🌱 Ejecutando seed...' &&
-        npx ts-node prisma/seed.ts &&
-        echo '🚀 Iniciando servidor...' &&
-        node dist/main.js
-      "
 
   # ── Frontend React (nginx) ────────────────────────────────────────────────────
   frontend:

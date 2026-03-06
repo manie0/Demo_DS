@@ -22,6 +22,20 @@ export interface Alert {
   tank?: { name: string; location?: string };
 }
 
+export interface CalibrationConfig {
+  sensorOffsetCm: number;
+  scaleFactor: number;
+  minValidCm: number;
+  maxValidCm: number;
+  updatedAt?: string;
+}
+
+export interface ReadingResult {
+  rawCm: number;
+  calibratedCm: number;
+  createdAt: string;
+}
+
 /** Datos del formulario de evaluación */
 export interface EvaluateForm {
   tankId: string;
